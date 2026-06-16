@@ -251,10 +251,15 @@ def history_table(rows, title, compact=False, page=1, total=0, per_page=8, searc
     body = ""
     for row in rows:
         query = urlencode({"id": row["id"]})
+        delete_form = (
+            f'<form method="post" action="/reports/delete" class="inline-form">'
+            f'<input type="hidden" name="prediction_id" value="{row["id"]}">'
+            '<button type="submit" class="secondary">Delete</button></form>'
+        )
         body += f"""
         <tr><td>{html.escape(row["news_text"][:90])}</td><td>{html.escape(row["source_url"] or "-")}</td>
         <td><span class="pill {row["label"]}">{row["label"].title()}</span></td><td>{row["confidence"]}%</td>
-        <td>{row["source_score"]}</td><td>{row["created_at"]}</td><td><a class="mini-link" href="/report?{query}">View Details</a></td></tr>
+        <td>{row["source_score"]}</td><td>{row["created_at"]}</td><td><a class="mini-link" href="/report?{query}">View Details</a>{delete_form}</td></tr>
         """
     if not body:
         body = '<tr><td colspan="7"><div class="empty-state">No records found.</div></td></tr>'
@@ -285,6 +290,11 @@ def history_filters(search, label, sort):
 
 def report_detail(report):
     explanation = "".join(f"<li>{html.escape(line)}</li>" for line in (report["explanation"] or "").splitlines() if line)
+    delete_form = (
+        f'<form method="post" action="/reports/delete" class="inline-form">'
+        f'<input type="hidden" name="prediction_id" value="{report["id"]}">'
+        '<button type="submit" class="secondary">Delete Report</button></form>'
+    )
     return f"""
     <section class="panel report-detail"><span class="eyebrow">Detailed report</span><h2>{report["label"].title()} News</h2>
     <div class="score-grid">
@@ -293,7 +303,7 @@ def report_detail(report):
         <p><b>{html.escape(report.get("model_used") or "-")}</b><span>Model Used</span></p><p><b>{report["created_at"]}</b><span>Timestamp</span></p>
     </div><h3>Full Article</h3><pre class="article-box">{html.escape(report["news_text"])}</pre>
     <h3>Explanation</h3><ul class="signals">{explanation}</ul>
-    <div class="report-actions"><a class="mini-link" href="/export/pdf?id={report["id"]}">Export PDF</a><a class="mini-link" href="/export/csv">Export CSV</a></div></section>
+    <div class="report-actions"><a class="mini-link" href="/export/pdf?id={report["id"]}">Export PDF</a><a class="mini-link" href="/export/csv">Export CSV</a>{delete_form}</div></section>
     """
 
 
@@ -424,6 +434,18 @@ def save_report():
         return response
     store.save_report(user["id"], int(request.form.get("prediction_id", "0")))
     return redirect("/saved-reports")
+
+
+@app.post("/reports/delete")
+def delete_report():
+    user, response = require_user()
+    if response:
+        return response
+    prediction_id = int(request.form.get("prediction_id", "0"))
+    deleted = store.delete_user_report(user["id"], prediction_id)
+    if deleted:
+        store.log_activity(user["id"], "report_deleted", f"prediction_id={prediction_id}")
+    return redirect(request.headers.get("Referer") or "/history")
 
 
 @app.get("/login")

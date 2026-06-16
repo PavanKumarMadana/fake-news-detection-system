@@ -349,6 +349,14 @@ class AppStore:
         with self._connect() as connection:
             connection.execute("DELETE FROM predictions WHERE id = ?", (prediction_id,))
 
+    def delete_user_report(self, user_id, prediction_id):
+        with self._connect() as connection:
+            cursor = connection.execute(
+                "DELETE FROM predictions WHERE id = ? AND user_id = ?",
+                (prediction_id, user_id),
+            )
+            return cursor.rowcount > 0
+
     def add_dataset_sample(self, title, label, sample_text):
         with self._connect() as connection:
             connection.execute(
