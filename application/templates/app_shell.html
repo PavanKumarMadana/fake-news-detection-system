@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{TITLE}} | Fake News Detecting System</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="brand sidebar-brand">
+            <span class="logo-mark">FN</span>
+            <div>
+                <strong>FakeGuard</strong>
+                <small>{{USER_ROLE}} workspace</small>
+            </div>
+        </div>
+        <nav class="side-nav">
+            <a href="/dashboard">Verify News</a>
+            <a href="/verify-url">Verify URL</a>
+            <a href="/history">Verification History</a>
+            <a href="/saved-reports">Saved Reports</a>
+            <a href="/profile">User Profile</a>
+            <a href="/help">Help Center</a>
+            <a href="/faq">FAQ</a>
+            <a href="/contact">Contact Us</a>
+            <a href="/about">About Project</a>
+            {{ADMIN_NAV}}
+        </nav>
+    </aside>
+
+    <section class="app-frame">
+        <header class="app-header">
+            <div>
+                <span class="eyebrow">Fake News Detecting System</span>
+                <h1>{{TITLE}}</h1>
+            </div>
+            <div class="header-user">
+                <button type="button" class="theme-toggle" onclick="document.body.classList.toggle('dark-mode')">Dark Mode</button>
+                <div>
+                    <strong>{{USER_NAME}}</strong>
+                    <small>{{USER_EMAIL}}</small>
+                </div>
+                <a class="logout-link" href="/logout">Logout</a>
+            </div>
+        </header>
+        <main class="app-content">
+            {{BODY}}
+        </main>
+    </section>
+</body>
+</html>

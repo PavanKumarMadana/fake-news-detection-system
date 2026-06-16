@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{TITLE}} | Fake News Detecting System</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body class="auth-page">
+    <main class="auth-shell">
+        <section class="auth-intro">
+            <span class="logo-mark">FN</span>
+            <h1>Fake News Detecting System</h1>
+            <p>Verify news, inspect source credibility, save reports, and manage users from a professional SaaS dashboard.</p>
+            <div class="auth-points">
+                <span>JWT APIs</span>
+                <span>Role Based Access</span>
+                <span>Admin Analytics</span>
+            </div>
+        </section>
+
+        <section class="auth-card">
+            <span class="eyebrow">Authentication</span>
+            <h2>{{TITLE}}</h2>
+            <p>{{SUBTITLE}}</p>
+            {{ERROR_BLOCK}}
+            <form method="post" action="/{{MODE}}">
+                <label class="{{NAME_FIELD_CLASS}}" for="name">Full name</label>
+                <input class="{{NAME_FIELD_CLASS}}" id="name" name="name" value="{{NAME_VALUE}}" autocomplete="name">
+
+                <label for="email">Email address</label>
+                <input id="email" name="email" type="email" value="{{EMAIL_VALUE}}" autocomplete="email" required>
+
+                <label for="password">Password</label>
+                <input id="password" name="password" type="password" autocomplete="current-password" required>
+
+                <button type="submit">{{PRIMARY_ACTION}}</button>
+            </form>
+            <div class="auth-switch">
+                <span>{{SWITCH_TEXT}}</span>
+                <a href="{{SWITCH_URL}}">{{SWITCH_ACTION}}</a>
+                {{FORGOT_BLOCK}}
+            </div>
+        </section>
+    </main>
+</body>
+</html>

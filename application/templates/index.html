@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Fake News Detecting System</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <header class="topbar">
+        <div class="brand">
+            <span class="logo-mark">FN</span>
+            <div>
+                <strong>Fake News Detecting System</strong>
+                <small>{{USER_EMAIL}}</small>
+            </div>
+        </div>
+        <nav>
+            <a href="#check">Check</a>
+            <a href="#history">History</a>
+            <a href="https://www.pib.gov.in/factcheck.aspx" target="_blank" rel="noreferrer">PIB Fact Check</a>
+            <a class="logout-link" href="/logout">Logout</a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="hero-copy">
+                <span class="eyebrow">News credibility analyzer</span>
+                <h1>Welcome, {{USER_NAME}}</h1>
+                <p>Analyze suspicious news content, detect misleading language patterns, and keep a clean record of every prediction.</p>
+                <div class="hero-actions">
+                    <a class="primary-link" href="#check">Start Analysis</a>
+                    <a class="ghost-link" href="#history">View History</a>
+                </div>
+            </div>
+            <div class="hero-panel" aria-label="System summary">
+                <div>
+                    <span>Model</span>
+                    <strong>Naive Bayes</strong>
+                </div>
+                <div>
+                    <span>Storage</span>
+                    <strong>SQLite</strong>
+                </div>
+                <div>
+                    <span>Runtime</span>
+                    <strong>Python</strong>
+                </div>
+            </div>
+        </section>
+
+        <section class="metrics" aria-label="Project highlights">
+            <article>
+                <span>Classifier</span>
+                <strong>Text Pattern Analysis</strong>
+            </article>
+            <article>
+                <span>Signals</span>
+                <strong>Clickbait and Source Cues</strong>
+            </article>
+            <article>
+                <span>History</span>
+                <strong>Local Prediction Records</strong>
+            </article>
+        </section>
+
+        <section id="check" class="workspace">
+            <form method="post" action="/predict" class="checker">
+                <div class="section-heading compact">
+                    <span class="eyebrow">Live analyzer</span>
+                    <h2>Check News Content</h2>
+                </div>
+                <label for="news_text">News headline or article text</label>
+                <textarea id="news_text" name="news_text" rows="11" placeholder="Example: Government confirms new policy after official cabinet meeting..." required>{{NEWS_TEXT}}</textarea>
+                <div class="actions">
+                    <button type="submit">Analyze News</button>
+                    <button type="reset" class="secondary">Clear</button>
+                </div>
+            </form>
+            {{RESULT_PANEL}}
+        </section>
+
+        <section id="history" class="history">
+            <div class="section-heading">
+                <span class="eyebrow">Recent predictions</span>
+                <h2>Analysis History</h2>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>News Text</th>
+                            <th>Result</th>
+                            <th>Confidence</th>
+                            <th>Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{HISTORY_ROWS}}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+</body>
+</html>
