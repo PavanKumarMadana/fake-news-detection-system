@@ -59,6 +59,9 @@ class FakeNewsDetector:
         self.vocabulary = set()
         self.labels = ("fake", "real")
         self.is_trained = False
+        # prediction tuning parameters
+        self.min_confidence = 0.60  # require at least 60% probability to return a definite label
+        self.short_text_min_tokens = 4  # below this, treat as low-confidence unless source is trusted
 
     def train(self):
         records = json.loads(self.dataset_path.read_text(encoding="utf-8"))
@@ -97,6 +100,9 @@ class FakeNewsDetector:
                 "signals": ["Please enter a longer news headline or article body."],
             }
 
+        # evaluate source credibility early to help short-text decisions
+        source = self.source_credibility(source_url)
+
         scores = {}
         total_docs = sum(self.class_doc_counts.values())
         vocabulary_size = max(len(self.vocabulary), 1)
@@ -113,10 +119,16 @@ class FakeNewsDetector:
         probabilities = self._softmax(scores)
         fake_probability = probabilities["fake"]
         real_probability = probabilities["real"]
-        label = "fake" if fake_probability >= real_probability else "real"
-        confidence = round(max(fake_probability, real_probability) * 100)
+        top_prob = max(fake_probability, real_probability)
+        predicted_label = "fake" if fake_probability >= real_probability else "real"
 
-        source = self.source_credibility(source_url)
+        # Default decision: if the prediction confidence is low or the text is very short,
+        # mark as 'unknown' to avoid false positives on terse claims.
+        label = predicted_label
+        if (len(tokens) <= self.short_text_min_tokens and source["score"] < 80) or top_prob < self.min_confidence:
+            label = "unknown"
+        confidence = round(top_prob * 100)
+
         signals = self._signals(text, tokens, label)
         if source_url:
             signals.append(source["summary"])
