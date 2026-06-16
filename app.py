@@ -4,6 +4,7 @@ from io import BytesIO, StringIO
 import csv
 import html
 import json
+import re
 import time
 
 from flask import Flask, Response, jsonify, make_response, redirect, request, send_file
@@ -19,6 +20,7 @@ from application.auth import (
     verify_password,
 )
 from application.detector import FakeNewsDetector
+from application.evidence import extract_claim_from_url
 from application.storage import AppStore
 
 
@@ -31,6 +33,7 @@ app = Flask(__name__, static_folder="application/static", static_url_path="/stat
 detector = FakeNewsDetector(DATASET_PATH).train()
 store = AppStore(DB_PATH)
 RATE_LIMITS = {}
+URL_ONLY_RE = re.compile(r"^(https?://|www\.)\S+$", re.IGNORECASE)
 
 
 def ensure_admin_account():
@@ -212,7 +215,8 @@ def result_panel(result, prediction_id=None):
             <p>Results include fake/real probability, confidence score, explanation, and source credibility.</p>
         </section>
         """
-    badge = "fake" if result["label"] == "fake" else "real"
+    badge = "unknown" if result["label"] == "unknown" else ("fake" if result["label"] == "fake" else "real")
+    status_mark = "!" if badge == "fake" else ("?" if badge == "unknown" else "OK")
     signals = "".join(f"<li>{html.escape(signal)}</li>" for signal in result["signals"])
     keywords = "".join(f'<span>{html.escape(word)}</span>' for word in result.get("keyword_analysis", []))
     save = (
@@ -223,7 +227,7 @@ def result_panel(result, prediction_id=None):
     )
     return f"""
     <section class="panel result-active">
-        <span class="status-icon {badge}">{'!' if badge == 'fake' else 'OK'}</span>
+        <span class="status-icon {badge}">{status_mark}</span>
         <span class="eyebrow">Prediction result</span>
         <div class="prediction-line"><h2 class="{badge}">{result["label"].title()} News</h2><strong>{result["confidence"]}% confidence</strong></div>
         <p class="risk-line">Risk Level: <b>{result["risk_level"]}</b></p>
@@ -291,6 +295,21 @@ def report_detail(report):
     <h3>Explanation</h3><ul class="signals">{explanation}</ul>
     <div class="report-actions"><a class="mini-link" href="/export/pdf?id={report["id"]}">Export PDF</a><a class="mini-link" href="/export/csv">Export CSV</a></div></section>
     """
+
+
+def build_prediction_input(news_text, source_url):
+    news_text = (news_text or "").strip()
+    source_url = (source_url or "").strip()
+    if news_text and not source_url and URL_ONLY_RE.match(news_text):
+        source_url = news_text
+        news_text = ""
+    if source_url and not news_text:
+        extracted = extract_claim_from_url(source_url)
+        extracted_text = extracted.get("text", "").strip()
+        if extracted_text:
+            return extracted_text[:5000], source_url
+        return f"News article from {source_url}", source_url
+    return news_text, source_url
 
 
 def simple_pdf(text):
@@ -385,15 +404,15 @@ def predict_news():
     user, response = require_user()
     if response:
         return response
-    source_url = request.form.get("source_url", "").strip()
-    news_text = request.form.get("news_text", "").strip() or (f"News article from {source_url}" if source_url else "")
+    news_text, source_url = build_prediction_input(
+        request.form.get("news_text", ""),
+        request.form.get("source_url", ""),
+    )
     if len(news_text) > 5000 or len(source_url) > 500:
         return Response("Input too large", status=400)
     result = detector.predict(news_text, source_url)
-    prediction_id = None
-    if result["label"] != "unknown":
-        prediction_id = store.add_prediction(user["id"], news_text, result, source_url)
-        store.log_activity(user["id"], "verification_complete", f"{result['label']} / {result['confidence']}%")
+    prediction_id = store.add_prediction(user["id"], news_text, result, source_url)
+    store.log_activity(user["id"], "verification_complete", f"{result['label']} / {result['confidence']}%")
     body = verify_form("/predict", "News headline or article text", html.escape(news_text), "Analyze News") + result_panel(result, prediction_id) + history_table(store.recent_predictions(user["id"], 10), "Verification History")
     return render_app("Verification Result", user, body)
 
@@ -728,7 +747,8 @@ def api_verify_news():
     if not user:
         return jsonify({"error": "Invalid JWT"}), 401
     payload = request.get_json(silent=True) or {}
-    return jsonify({"result": detector.predict(payload.get("news_text", ""), payload.get("source_url", ""))})
+    news_text, source_url = build_prediction_input(payload.get("news_text", ""), payload.get("source_url", ""))
+    return jsonify({"result": detector.predict(news_text, source_url), "news_text": news_text, "source_url": source_url})
 
 
 @app.get("/api/history")
